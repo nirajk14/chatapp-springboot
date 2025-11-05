@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+<h2>Spring Boot STOMP Chat</h2>
+<input type="text" id="sender" placeholder="Your name">
+<br><br>
+<input type="text" id="message" placeholder="Type a message">
+<button onclick="sendMessage()">Send</button>
+
+<ul id="messages"></ul>
+
+<script>
+    let stompClient = null;
+
+    function connect() {
+        const socket = new SockJS('/ws-chat');
+        stompClient = Stomp.over(socket);
+        stompClient.connect({}, function(frame) {
+            console.log('Connected: ' + frame);
+            stompClient.subscribe('/topic/messages', function(response) {
+                const msg = JSON.parse(response.body);
+                showMessage(msg.sender + ": " + msg.content);
+            });
+        });
+    }
+
+    function sendMessage() {
+        const sender = document.getElementById("sender").value;
+        const content = document.getElementById("message").value;
+        stompClient.send("/app/chat", {}, JSON.stringify({'sender': sender, 'content': content}));
+        document.getElementById("message").value = '';
+    }
+
+    function showMessage(message) {
+        const messages = document.getElementById("messages");
+        const li = document.createElement("li");
+        li.textContent = message;
+        messages.appendChild(li);
+    }
+
+    connect();
+</script>
+</body>
+</html>
